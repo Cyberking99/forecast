@@ -1,0 +1,15 @@
+{
+  "name": "forecast",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "contracts",
+    "frontend"
+  ],
+  "scripts": {
+    "build:contracts": "npm run build -w contracts",
+    "test:contracts": "npm run test -w contracts",
+    "dev": "npm run dev -w frontend",
+    "build": "npm run build -w frontend"
+  }
+}

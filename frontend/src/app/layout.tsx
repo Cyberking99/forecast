@@ -27,8 +27,9 @@ export default function RootLayout({
                   Forecast
                 </Link>
                 <div className="header-actions">
-                <WalletConnectButton />
-                <Link href="/create" className="btn btn-primary">Create Prediction</Link>
+                  <WalletConnectButton />
+                  <Link href="/portfolio" className="btn btn-secondary" style={{ marginRight: "8px" }}>My Portfolio</Link>
+                  <Link href="/create" className="btn btn-primary">Create Prediction</Link>
                 </div>
               </div>
             </header>

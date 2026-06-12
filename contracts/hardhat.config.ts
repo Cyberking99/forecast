@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config({ path: "../.env" });
 
-const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY ?? "0x" + "11".repeat(32);
+const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x" + "11".repeat(32);
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -27,6 +27,21 @@ const config: HardhatUserConfig = {
       chainId: 84532,
       accounts: PRIVATE_KEY.length >= 66 ? [PRIVATE_KEY] : [],
     },
+  },
+  etherscan: {
+    apiKey: {
+      baseSepolia: process.env.BASESCAN_API_KEY || "",
+    },
+    customChains: [
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=84532",
+          browserURL: "https://sepolia.basescan.org",
+        },
+      },
+    ],
   },
 };
 

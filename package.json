@@ -4,12 +4,14 @@
   "private": true,
   "workspaces": [
     "contracts",
-    "frontend"
+    "frontend",
+    "oracle"
   ],
   "scripts": {
     "build:contracts": "npm run build -w contracts",
     "test:contracts": "npm run test -w contracts",
     "dev": "npm run dev -w frontend",
+    "dev:oracle": "npm run start -w oracle",
     "build": "npm run build -w frontend"
   }
 }

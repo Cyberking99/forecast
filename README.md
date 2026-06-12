@@ -6,6 +6,16 @@ The project leverages cutting-edge Web3 and AI tools, including the **MetaMask S
 
 ---
 
+## 🚀 Deployed Contracts (Base Sepolia)
+
+- **USDC Address**: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
+- **OracleVerifier**: `0x3Da178f34790964cA697599a829E949Dd55152AB`
+- **FeeCollector**: `0x47D190ed0bBcD757765a0A3862535D68BF000cF5`
+- **PredictionPool**: `0x6096b6892F13F74495c3499a7CE21321fD971e33`
+- **SessionKeyModule**: `0xE1Ec695acdeDF0844808e106C38498c5dAbA2434`
+
+---
+
 ## 🚀 Key Features & Tech Stack
 
 - **Solidity Smart Contracts (Base Sepolia)**: Parimutuel pool logic, oracle verification (`OracleVerifier.sol`), and session key constraints (`SessionKeyModule.sol`).
@@ -28,6 +38,9 @@ The project leverages cutting-edge Web3 and AI tools, including the **MetaMask S
 │   ├── src/app/           # App routes and providers
 │   ├── src/features/      # Staking, analysis, and pool components
 │   └── src/shared/        # Shared UI and Wagmi/Viem configuration
+├── oracle/                # Venice AI Oracle worker service
+│   ├── src/resolvePool.ts # Venice AI resolution prompting and API
+│   └── src/worker.ts      # Polling loops and oracle signing
 ├── docs/                  # Technical design specs and implementation plans
 └── prototype-design/      # High-fidelity static HTML/CSS mockup gallery
 ```
@@ -44,9 +57,34 @@ Install dependencies for all workspaces from the project root:
 npm install
 ```
 
-### 2. Testing Contracts
+---
 
-Hardhat's default EDR (Ethereum Development Runtime) can cause native crashes (Bus errors) on some virtualized Linux systems. To run the tests safely, we run them against a local **Anvil** node:
+### 2. Environment Configuration
+
+Create a `.env` file in the root directory and populate it with the relevant variables:
+
+```bash
+# Contracts
+DEPLOYER_PRIVATE_KEY=your_deployer_private_key
+BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+ORACLE_ADDRESS=your_oracle_signer_address
+ORACLE_PRIVATE_KEY=your_oracle_private_key
+ONESHOT_RELAYER_ADDRESS=your_oneshot_relayer_address
+
+# API Keys
+ONESHOT_API_KEY=your_oneshot_api_key
+ONESHOT_WEBHOOK_SECRET=your_oneshot_webhook_secret
+VENICE_API_KEY=your_venice_api_key
+DATABASE_URL=postgresql://user:pass@localhost:5432/forecaster
+```
+
+---
+
+### 3. Deploying & Testing Smart Contracts
+
+#### Running tests locally (against Anvil):
+To run tests safely, we use an active local **Anvil** node:
 
 1. **Start Anvil** in a separate terminal:
    ```bash
@@ -58,7 +96,44 @@ Hardhat's default EDR (Ethereum Development Runtime) can cause native crashes (B
    npm run test:contracts -- --network localhost
    ```
 
-### 3. Running the Frontend
+#### Deploying Contracts:
+To deploy the contracts to the local network or Base Sepolia testnet:
+
+```bash
+# Deploy to Local Anvil
+npx -w contracts hardhat run scripts/deploy.ts --network localhost
+
+# Deploy to Base Sepolia
+npx -w contracts hardhat run scripts/deploy.ts --network baseSepolia
+```
+
+#### Seeding Pools (Localhost):
+To seed two initial prediction pools and mock stakes for testing:
+
+```bash
+npx -w contracts hardhat run scripts/seed.js --network localhost
+```
+
+#### Syncing ABIs to Frontend:
+To export contract ABIs and generated addresses directly to the frontend application:
+
+```bash
+node contracts/scripts/export-contracts.js
+```
+
+---
+
+### 4. Running the Venice AI Oracle Agent
+
+Start the oracle worker that polls for locked pools and resolves them using Venice AI:
+
+```bash
+npm run dev:oracle
+```
+
+---
+
+### 5. Running the Frontend
 
 Start the Next.js development server:
 
@@ -68,7 +143,9 @@ npm run dev
 
 The web app will be accessible at [http://localhost:3000](http://localhost:3000).
 
-### 4. Building for Production
+---
+
+### 6. Building for Production
 
 Compile and build the Next.js bundle:
 

@@ -4,7 +4,18 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying with:", deployer.address);
 
-  const usdcAddress = process.env.USDC_ADDRESS ?? "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+  const network = await ethers.provider.getNetwork();
+  let usdcAddress = process.env.USDC_ADDRESS;
+
+  if (network.chainId === 31337n || !usdcAddress) {
+    const mockUSDC = await ethers.deployContract("MockUSDC");
+    await mockUSDC.waitForDeployment();
+    usdcAddress = await mockUSDC.getAddress();
+    console.log("MockUSDC:", usdcAddress);
+  } else {
+    console.log("Using USDC address:", usdcAddress);
+  }
+
   const oracleAddress = process.env.ORACLE_ADDRESS ?? deployer.address;
   const relayerAddress = process.env.ONESHOT_RELAYER_ADDRESS ?? deployer.address;
 

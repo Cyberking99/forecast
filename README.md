@@ -27,6 +27,25 @@ The project leverages cutting-edge Web3 and AI tools, including the **MetaMask S
 
 ---
 
+## 🍳 Hackathon Integrations & Dev Cook Off Alignment
+
+This project is built explicitly for the **MetaMask Smart Accounts Kit x 1Shot API x Venice AI Dev Cook Off**:
+
+### 1. MetaMask Smart Accounts Kit (Porto)
+- **Account Abstraction**: Leverages the `porto` EIP-7702 testbed client to dynamically upgrade traditional EOAs into smart accounts on Base Sepolia.
+- **Session Keys (ERC-7715)**: Implements gasless, popup-free staking by requesting a 7-day session key permission (`StakePanel.tsx`), eliminating recurring signature requests for subsequent stakes.
+- **Atomic Batches (EIP-5792)**: Uses the `useSendCalls` hook to bundle USDC approvals and prediction pool stake actions into a single, seamless, and gasless transaction.
+
+### 2. 1Shot API
+- **Atomic Payouts**: Uses the 1Shot batching/sponsored relayer model to implement parimutuel pool payouts. The contract settlements trigger payouts for all winning stakers in a single batch, drastically reducing gas overhead and user friction.
+- **Confirmation Webhooks**: Implements the 1Shot transaction confirmation webhooks (`/api/webhooks/1shot`) to dynamically track and update pending stakes and pool settlement statuses off-chain.
+
+### 3. Venice AI
+- **Autonomous Resolution**: The oracle agent (`oracle/src/worker.ts`) queries locked pools on-chain and uses Venice AI's private `llama-3.3-70b` LLM completions (`oracle/src/resolvePool.ts`) to scrape evidence and make deterministic resolutions.
+- **Monetized AI Analysis (x402)**: Enables users to pay $0.50 USDC on-chain to unlock a dynamic prediction confidence and risk analysis report generated directly by Venice AI.
+
+---
+
 ## 📁 Repository Structure
 
 ```

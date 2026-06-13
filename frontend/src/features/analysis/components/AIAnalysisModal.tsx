@@ -46,6 +46,17 @@ export function AIAnalysisModal({
     return () => clearTimeout(timer);
   }, [isLoading, isUnlocked]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   const handleUnlock = async () => {
     if (!isConnected) {
       alert("Please connect your wallet first!");

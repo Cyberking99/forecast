@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useConnect, useDisconnect, useReadContract, type Connector } from 'wagmi';
 import { getUsdcAddress, USDC_ABI } from '@/shared/lib/contracts';
 
@@ -11,6 +11,19 @@ export function WalletConnectButton() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const isAnyModalOpen = isConnectModalOpen || isAccountModalOpen;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
 
   const usdcAddress = getUsdcAddress();
 

@@ -76,7 +76,6 @@ body {
   color: var(--fg);
   background: var(--bg);
   line-height: 1.6;
-  overflow-x: hidden;
 }
 
 /* Typography Rules */
@@ -127,6 +126,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .app-header {
@@ -580,6 +580,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   max-width: 640px;
   max-height: 80vh;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 40px;
   position: relative;
 }

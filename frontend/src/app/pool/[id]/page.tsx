@@ -95,6 +95,17 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
 
   // Calculate time remaining (single large number + unit, e.g. "14h" or "2d" or "Closed")
   const stakeDeadline = Number(poolDetails[2] as bigint);
+  const resolutionDeadline = Number(poolDetails[3] as bigint);
+  const resolutionDate = new Date(resolutionDeadline * 1000);
+  const formattedResolutionTime = resolutionDate.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short"
+  });
+
   const now = Math.floor(Date.now() / 1000);
   const diffSecs = stakeDeadline - now;
   let timeLeft = "CLOSED";
@@ -207,7 +218,7 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
           </div>
 
           {/* Meta specs */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", border: "2px solid var(--border)", padding: "24px", background: "var(--surface)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.2fr", gap: "24px", border: "2px solid var(--border)", padding: "24px", background: "var(--surface)" }}>
             <div>
               <div style={{ fontSize: "10px", color: "var(--muted)" }}>POOL ADDRESS</div>
               <div style={{ fontSize: "12px", fontFamily: "var(--font-mono)", wordBreak: "break-all", marginTop: "4px" }}>{poolId}</div>
@@ -216,6 +227,12 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
               <div style={{ fontSize: "10px", color: "var(--muted)" }}>TOTAL TELEMETRY POOL</div>
               <div style={{ fontSize: "20px", fontWeight: 800, marginTop: "4px", color: "var(--accent)" }}>
                 ${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: "10px", color: "var(--muted)" }}>EXPECTED RESOLUTION TIME</div>
+              <div style={{ fontSize: "12px", fontFamily: "var(--font-mono)", marginTop: "4px", color: "var(--fg)", fontWeight: 700 }}>
+                {formattedResolutionTime}
               </div>
             </div>
           </div>

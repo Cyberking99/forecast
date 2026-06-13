@@ -13,6 +13,7 @@ export const PREDICTION_POOL_ABI = parseAbi([
   'event PoolCreated(bytes32 indexed poolId, string question, string[] options, uint256 stakeDeadline)',
   'function pools(bytes32 poolId) external view returns (bytes32 id, string question, uint256 stakeDeadline, uint256 resolutionDeadline, uint256 disputeWindow, uint256 resolvedAt, uint8 winningOption, uint8 status, uint256 totalPool, uint256 protocolFeeBps, address creator, bytes32 verdictHash, uint8 verdictCount)',
   'function getPoolOptions(bytes32 poolId) external view returns (string[])',
+  'function lockPool(bytes32 poolId) external',
   'function submitVerdict(bytes32 poolId, uint8 winningOption, bytes32 verdictHash, bytes signature) external'
 ]);
 
@@ -105,8 +106,31 @@ async function fetchLockedPools(): Promise<Pool[]> {
       }) as unknown as any[];
 
       // PoolStatus enum is: 0: OPEN, 1: LOCKED, 2: RESOLVED, 3: SETTLED
-      const status = poolData[7] as number;
+      let status = poolData[7] as number;
       const question = poolData[1] as string;
+      const stakeDeadline = poolData[2] as bigint;
+
+      const nowSec = BigInt(Math.floor(Date.now() / 1000));
+
+      if (status === 0 && nowSec >= stakeDeadline) {
+        console.log(`Pool ${poolId} ("${question}") is past its staking deadline but still OPEN. Auto-locking now...`);
+        try {
+          const hash = await walletClient.writeContract({
+            address: PREDICTION_POOL_ADDRESS,
+            abi: PREDICTION_POOL_ABI,
+            functionName: 'lockPool',
+            args: [poolId],
+          });
+          console.log(`Lock transaction sent: ${hash}. Waiting for block confirmation...`);
+          await publicClient.waitForTransactionReceipt({ hash });
+          console.log(`Pool ${poolId} locked successfully.`);
+          
+          // Re-fetch pool status after locking
+          status = 1;
+        } catch (err) {
+          console.error(`Failed to lock pool ${poolId}:`, err);
+        }
+      }
 
       if (status === 1) { // LOCKED
         console.log(`Pool ${poolId} ("${question}") is LOCKED. Fetching options...`);

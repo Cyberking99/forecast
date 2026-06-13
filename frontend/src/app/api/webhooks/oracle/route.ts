@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
           abi: PREDICTION_POOL_ABI,
           functionName: 'pools',
           args: [poolId],
-        }) as unknown as any[];
+        }) as unknown as unknown[];
 
         const optionsArray = await publicClient.readContract({
           address: getPredictionPoolAddress() as `0x${string}`,

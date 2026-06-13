@@ -51,9 +51,13 @@ export function StakePanel({
 
   const { mutateAsync: grantPermissions } = Hooks.useGrantPermissions();
 
-  const [isTxPending, setIsTxPending] = useState(false);
+  // Separate loading states for permission grant vs staking to avoid UI overlap
+  const [isPermissionPending, setIsPermissionPending] = useState(false);
+  const [isStakePending, setIsStakePending] = useState(false);
+  
   const [txError, setTxError] = useState<string | null>(null);
   const [showPopupWarning, setShowPopupWarning] = useState(false);
+  const [hasSessionKey, setHasSessionKey] = useState(false);
 
   const poolAddress = getPredictionPoolAddress() as `0x${string}`;
   const usdcAddress = getUsdcAddress() as `0x${string}`;
@@ -80,17 +84,37 @@ export function StakePanel({
     query: { enabled: !!address && !isWrongNetwork },
   });
 
-  // Simplified and more robust permission detection: check if there's any active unexpired permission
+  // Check query permissions
   const activePermission = permissions?.find((p) => {
-    const isNotExpired = p.expiry > Date.now() / 1000;
-    return isNotExpired;
+    return p.expiry > Date.now() / 1000;
   });
 
-  const hasSessionKey = !!activePermission;
+  // Initialize and synchronize session key state with localStorage to persist through page refreshes
+  useEffect(() => {
+    if (address) {
+      const stored = localStorage.getItem(`porto_session_active_${address}`);
+      if (stored === "true") {
+        setHasSessionKey(true);
+      }
+    } else {
+      setHasSessionKey(false);
+    }
+  }, [address]);
 
   useEffect(() => {
+    if (activePermission) {
+      setHasSessionKey(true);
+      if (address) {
+        localStorage.setItem(`porto_session_active_${address}`, "true");
+      }
+    }
+  }, [activePermission, address]);
+
+  // Show warning popup guide if transaction is pending for too long
+  useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isTxPending) {
+    const isAnyPending = isPermissionPending || isStakePending;
+    if (isAnyPending) {
       timer = setTimeout(() => {
         setShowPopupWarning(true);
       }, 8000);
@@ -98,12 +122,12 @@ export function StakePanel({
       setShowPopupWarning(false);
     }
     return () => clearTimeout(timer);
-  }, [isTxPending]);
+  }, [isPermissionPending, isStakePending]);
 
   const handleGrantPermissions = async () => {
     try {
       setTxError(null);
-      setIsTxPending(true);
+      setIsPermissionPending(true);
       setShowPopupWarning(false);
       await grantPermissions({
         expiry: Math.floor(Date.now() / 1000) + 3600 * 24 * 7, // 7 days
@@ -118,13 +142,17 @@ export function StakePanel({
           ]
         }
       });
+      setHasSessionKey(true);
+      if (address) {
+        localStorage.setItem(`porto_session_active_${address}`, "true");
+      }
       await refetchPermissions();
     } catch (err: unknown) {
       console.error("Failed to grant permissions:", err);
       const errorMessage = err instanceof Error ? err.message : String(err);
       setTxError(errorMessage || "Failed to grant permissions");
     } finally {
-      setIsTxPending(false);
+      setIsPermissionPending(false);
     }
   };
 
@@ -150,7 +178,7 @@ export function StakePanel({
   const handleStake = async () => {
     if (!isConnected || isWrongNetwork || selectedOptionIdx === null || !amount) return;
 
-    setIsTxPending(true);
+    setIsStakePending(true);
     setTxError(null);
     setShowPopupWarning(false);
 
@@ -215,7 +243,7 @@ export function StakePanel({
       const shortMessage = err && typeof err === "object" && "shortMessage" in err ? String((err as { shortMessage?: unknown }).shortMessage) : undefined;
       setTxError(shortMessage || errorMessage || "Transaction failed");
     } finally {
-      setIsTxPending(false);
+      setIsStakePending(false);
     }
   };
 
@@ -263,9 +291,9 @@ export function StakePanel({
                     <button
                       className="btn btn-secondary btn-block btn-small"
                       onClick={handleGrantPermissions}
-                      disabled={isTxPending}
+                      disabled={isPermissionPending}
                     >
-                      {isTxPending ? "AUTHORIZING..." : "ENABLE ONE-CLICK STAKING"}
+                      {isPermissionPending ? "AUTHORIZING..." : "ENABLE ONE-CLICK STAKING"}
                     </button>
                   </>
                 ) : (
@@ -335,10 +363,10 @@ export function StakePanel({
             <button
               className="btn btn-primary btn-block btn-accent"
               style={{ marginTop: "24px" }}
-              disabled={!isConnected || selectedOptionIdx === null || !amount || isTxPending}
+              disabled={!isConnected || selectedOptionIdx === null || !amount || isStakePending}
               onClick={handleStake}
             >
-              {isTxPending
+              {isStakePending
                 ? "CONFIRMING..."
                 : !isConnected
                 ? "CONNECT WALLET"

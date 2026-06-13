@@ -35,10 +35,12 @@ export const CONTRACT_ADDRESSES = {
   31337: {
     predictionPool: "${LOCAL_PREDICTION_POOL}",
     usdc: "${LOCAL_USDC}",
+    deployedBlock: 0n,
   },
   84532: {
     predictionPool: "${BASE_SEPOLIA_PREDICTION_POOL}",
     usdc: "${BASE_SEPOLIA_USDC}",
+    deployedBlock: 42759313n,
   },
 } as const;
 
@@ -62,23 +64,31 @@ export async function fetchOnChainPools() {
   const address = getPredictionPoolAddress();
   
   try {
-    let fromBlock = BigInt(0);
-    if (chainId === 84532) {
-      try {
-        const latest = await publicClient.getBlockNumber();
-        fromBlock = latest > BigInt(1900) ? latest - BigInt(1900) : BigInt(0);
-      } catch (err) {
-        console.warn("Failed to get latest block, falling back to 0:", err);
-      }
+    const startBlock = CONTRACT_ADDRESSES[chainId].deployedBlock;
+    const latest = await publicClient.getBlockNumber();
+    
+    // Base Sepolia RPC has a query range limit of 2000 blocks
+    const batchSize = 2000n;
+    const promises = [];
+    
+    for (let from = startBlock; from <= latest; from += batchSize) {
+      const to = from + batchSize - 1n > latest ? latest : from + batchSize - 1n;
+      promises.push(
+        publicClient.getContractEvents({
+          address,
+          abi: PREDICTION_POOL_ABI,
+          eventName: 'PoolCreated',
+          fromBlock: from,
+          toBlock: to,
+        }).catch(err => {
+          console.warn(\`Failed to fetch events from \${from} to \${to}:\`, err);
+          return [];
+        })
+      );
     }
 
-    const logs = await publicClient.getContractEvents({
-      address,
-      abi: PREDICTION_POOL_ABI,
-      eventName: 'PoolCreated',
-      fromBlock,
-    });
-
+    const results = await Promise.all(promises);
+    const logs = results.flat();
     const poolIds = logs.map(log => log.args.poolId).filter(Boolean) as string[];
 
     if (poolIds.length === 0) {

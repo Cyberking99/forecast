@@ -616,6 +616,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   background: var(--bg);
   border-bottom: 2px solid var(--border);
   display: flex;
+  justify-content: center;
   gap: 8px;
   padding: 16px 32px;
 }

@@ -67,37 +67,6 @@ export default async function Home() {
           </div>
         )}
 
-        {/* Type Specimen Section (Deliverable requirement) */}
-        <section style={{ marginTop: "48px", borderTop: "2px solid var(--border)", paddingTop: "48px" }}>
-          <div style={{ fontSize: "11px", color: "var(--accent)", fontWeight: 700, textTransform: "uppercase", marginBottom: "24px", fontFamily: "var(--font-mono)" }}>
-            SYSTEM TYPE SPECIMEN
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px" }}>
-            {/* Display typography */}
-            <div>
-              <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "16px", fontFamily: "var(--font-mono)" }}>
-                DISPLAY TYPEFACE: SYNE (800 WEIGHT ONLY)
-              </div>
-              <h1 style={{ fontSize: "46px", marginBottom: "16px" }}>DISPLAY HERO H1</h1>
-              <h2 style={{ fontSize: "32px", marginBottom: "12px" }}>SUB-HEADER H2</h2>
-              <h3 style={{ fontSize: "20px", marginBottom: "8px" }}>CARD TITLE H3</h3>
-            </div>
-
-            {/* Monospace typography */}
-            <div>
-              <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "16px", fontFamily: "var(--font-mono)" }}>
-                DATA & PROSE TYPEFACE: SPACE MONO (400 WEIGHT)
-              </div>
-              <p style={{ fontSize: "14px", lineHeight: "1.7", marginBottom: "16px" }}>
-                Prose, telemetry tables, odds listings, and ledger transactions are set in Space Mono for maximum numeric alignment. We avoid intermediate weight categories (e.g. 500, 600) to maintain high visual contrast.
-              </p>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "18px", fontWeight: 700, color: "var(--accent)" }}>
-                TABULAR NUMBERS: $2,835.00 USDC (62% POOL SHARE)
-              </div>
-            </div>
-          </div>
-        </section>
 
       </main>
     </>

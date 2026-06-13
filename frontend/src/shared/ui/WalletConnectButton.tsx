@@ -75,7 +75,7 @@ export function WalletConnectButton() {
             </div>
 
             {/* Wallet Provider List */}
-            <div style={{ display: 'flex', flexHorizontal: 'none', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {injectedConnector && (
                 <button
                   onClick={() => handleConnect(injectedConnector)}

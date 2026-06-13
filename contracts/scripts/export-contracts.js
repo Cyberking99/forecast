@@ -40,7 +40,7 @@ export const CONTRACT_ADDRESSES = {
   84532: {
     predictionPool: "${BASE_SEPOLIA_PREDICTION_POOL}",
     usdc: "${BASE_SEPOLIA_USDC}",
-    deployedBlock: 42759313n,
+    deployedBlock: 42799516n,
   },
 } as const;
 

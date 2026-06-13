@@ -66,7 +66,7 @@ async function fetchLockedPools(): Promise<Pool[]> {
     const latestBlock = await publicClient.getBlockNumber();
     
     // Deployed block for PredictionPool on Base Sepolia
-    const deployedBlock = 42759313n;
+    const deployedBlock = 42799516n;
     const startBlock = latestBlock > deployedBlock ? deployedBlock : 0n;
 
     const batchSize = 2000n;

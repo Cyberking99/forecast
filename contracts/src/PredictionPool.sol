@@ -23,8 +23,8 @@ contract PredictionPool is ReentrancyGuard, Ownable {
     uint256 public constant MAX_FEE_BPS = 500;
     uint256 public constant MIN_OPTIONS = 2;
     uint256 public constant MAX_OPTIONS = 10;
-    uint256 public constant MIN_STAKE_LEAD = 1 hours;
-    uint256 public constant MIN_RESOLUTION_GAP = 1 hours;
+    uint256 public constant MIN_STAKE_LEAD = 10 seconds;
+    uint256 public constant MIN_RESOLUTION_GAP = 10 seconds;
 
     struct Pool {
         bytes32 id;

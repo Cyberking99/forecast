@@ -10,9 +10,9 @@ export const CONTRACT_ADDRESSES = {
     deployedBlock: 0n,
   },
   84532: {
-    predictionPool: "0x6096b6892F13F74495c3499a7CE21321fD971e33",
+    predictionPool: "0x807203F9b5bab0cd65fB94Db89728075d9E5Fe84",
     usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    deployedBlock: 42759313n,
+    deployedBlock: 42799516n,
   },
 } as const;
 

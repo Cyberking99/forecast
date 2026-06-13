@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import React, { useState, useEffect } from "react";
+import { useAccount, useWriteContract, useSendCalls } from "wagmi";
 import { USDC_ABI, getUsdcAddress } from "@/shared/lib/contracts";
 
 interface AIAnalysisModalProps {
@@ -19,6 +19,7 @@ export function AIAnalysisModal({
 }: AIAnalysisModalProps) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPopupWarning, setShowPopupWarning] = useState(false);
   const [analysis, setAnalysis] = useState<{
     confidence: number;
     riskLevel: string;
@@ -27,8 +28,23 @@ export function AIAnalysisModal({
     probabilities: number[];
   } | null>(null);
 
-  const { isConnected } = useAccount();
+  const { isConnected, connector } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const { sendCallsAsync } = useSendCalls();
+
+  const isPorto = connector?.id === "xyz.ithaca.porto";
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading && !isUnlocked) {
+      timer = setTimeout(() => {
+        setShowPopupWarning(true);
+      }, 8000);
+    } else {
+      setShowPopupWarning(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading, isUnlocked]);
 
   const handleUnlock = async () => {
     if (!isConnected) {
@@ -37,15 +53,32 @@ export function AIAnalysisModal({
     }
 
     setIsLoading(true);
+    setShowPopupWarning(false);
     try {
       console.log("Initiating USDC transfer for AI Analysis...");
       
-      const txHash = await writeContractAsync({
-        address: getUsdcAddress() as `0x${string}`,
-        abi: USDC_ABI,
-        functionName: "transfer",
-        args: ["0x47D190ed0bBcD757765a0A3862535D68BF000cF5", BigInt(500000)],
-      });
+      let txHash: string;
+      if (isPorto) {
+        // Use sendCallsAsync for Porto AA smart accounts
+        const callsResult = await sendCallsAsync({
+          calls: [
+            {
+              to: getUsdcAddress() as `0x${string}`,
+              abi: USDC_ABI,
+              functionName: "transfer",
+              args: ["0x47D190ed0bBcD757765a0A3862535D68BF000cF5", BigInt(500000)],
+            }
+          ]
+        });
+        txHash = callsResult.id;
+      } else {
+        txHash = await writeContractAsync({
+          address: getUsdcAddress() as `0x${string}`,
+          abi: USDC_ABI,
+          functionName: "transfer",
+          args: ["0x47D190ed0bBcD757765a0A3862535D68BF000cF5", BigInt(500000)],
+        });
+      }
       
       console.log(`Payment transaction submitted: ${txHash}. Fetching AI report...`);
 
@@ -175,6 +208,7 @@ export function AIAnalysisModal({
                 bottom: 0,
                 background: "rgba(245, 242, 237, 0.5)",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 textAlign: "center",
@@ -193,6 +227,12 @@ export function AIAnalysisModal({
                 >
                   {isLoading ? "UNLOCKING..." : "UNLOCK FOR 0.50 USDC"}
                 </button>
+
+                {showPopupWarning && (
+                  <div style={{ marginTop: "16px", padding: "12px", border: "1px solid var(--accent)", background: "var(--surface)", fontSize: "11px", color: "var(--muted)", fontFamily: "var(--font-mono)", textAlign: "left" }}>
+                    💡 Taking longer than expected? Check if a MetaMask or Porto confirmation popup is minimized or blocked by your browser.
+                  </div>
+                )}
               </div>
             </div>
           )}

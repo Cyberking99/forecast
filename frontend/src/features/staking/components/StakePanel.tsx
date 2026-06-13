@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useChainId, useSwitchChain, useSendCalls } from "wagmi";
 import { Hooks } from "porto/wagmi";
 import { getPredictionPoolAddress, getUsdcAddress, PREDICTION_POOL_ABI, USDC_ABI } from "@/shared/lib/contracts";
@@ -33,10 +33,10 @@ export function StakePanel({
   setSelectedOptionIdx,
   totalPool,
   refetch,
-  question,
-  optionsLabels,
+  question = "Will this prediction resolve?",
+  optionsLabels = []
 }: StakePanelProps) {
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState<string>("");
   const { address, isConnected, connector } = useAccount();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
@@ -53,6 +53,7 @@ export function StakePanel({
 
   const [isTxPending, setIsTxPending] = useState(false);
   const [txError, setTxError] = useState<string | null>(null);
+  const [showPopupWarning, setShowPopupWarning] = useState(false);
 
   const poolAddress = getPredictionPoolAddress() as `0x${string}`;
   const usdcAddress = getUsdcAddress() as `0x${string}`;
@@ -79,18 +80,31 @@ export function StakePanel({
     query: { enabled: !!address && !isWrongNetwork },
   });
 
+  // Simplified and more robust permission detection: check if there's any active unexpired permission
   const activePermission = permissions?.find((p) => {
     const isNotExpired = p.expiry > Date.now() / 1000;
-    if (!isNotExpired) return false;
-    return p.permissions.calls?.some((c) => c.to?.toLowerCase() === poolAddress.toLowerCase());
+    return isNotExpired;
   });
 
   const hasSessionKey = !!activePermission;
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isTxPending) {
+      timer = setTimeout(() => {
+        setShowPopupWarning(true);
+      }, 8000);
+    } else {
+      setShowPopupWarning(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isTxPending]);
 
   const handleGrantPermissions = async () => {
     try {
       setTxError(null);
       setIsTxPending(true);
+      setShowPopupWarning(false);
       await grantPermissions({
         expiry: Math.floor(Date.now() / 1000) + 3600 * 24 * 7, // 7 days
         feeToken: null,
@@ -119,7 +133,7 @@ export function StakePanel({
   let payoutResult = "0.00";
   let impliedOdds = "1.00x";
 
-  if (selectedOptionIdx !== null) {
+  if (selectedOptionIdx !== null && options[selectedOptionIdx]) {
     const selectedOpt = options[selectedOptionIdx];
     const ti = Number(selectedOpt.totalStakedRaw) / 10 ** 6;
     const s = amount && !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0;
@@ -138,6 +152,7 @@ export function StakePanel({
 
     setIsTxPending(true);
     setTxError(null);
+    setShowPopupWarning(false);
 
     try {
       const parsedAmount = Math.floor(parseFloat(amount) * 10 ** 6);
@@ -205,6 +220,7 @@ export function StakePanel({
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const displayLabels = optionsLabels.length > 0 ? optionsLabels : options.map((o) => o.label);
 
   return (
     <>
@@ -238,20 +254,18 @@ export function StakePanel({
                   <span style={{ fontWeight: 700, color: hasSessionKey ? "var(--accent)" : "var(--fg)" }}>
                     {hasSessionKey ? "⚡ ONE-CLICK STAKING ACTIVE" : "ONE-CLICK STAKING"}
                   </span>
-                  <span style={{ fontSize: "10px", color: "var(--muted)" }}>PORTO AA</span>
                 </div>
                 {!hasSessionKey ? (
                   <>
                     <p style={{ color: "var(--muted)", marginBottom: "12px" }}>
-                      Enable silent execution for gasless staking without wallet prompts.
+                      Authorize gasless predictions for 7 days.
                     </p>
-                    <button 
-                      className="btn btn-primary btn-block"
-                      style={{ fontSize: "11px", padding: "8px" }}
-                      disabled={isTxPending}
+                    <button
+                      className="btn btn-secondary btn-block btn-small"
                       onClick={handleGrantPermissions}
+                      disabled={isTxPending}
                     >
-                      {isTxPending ? "ENABLING..." : "ENABLE ONE-CLICK STAKING"}
+                      {isTxPending ? "AUTHORIZING..." : "ENABLE ONE-CLICK STAKING"}
                     </button>
                   </>
                 ) : (
@@ -260,22 +274,39 @@ export function StakePanel({
               </div>
             )}
 
-            <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--muted)", marginBottom: "8px" }}>
-              Selected Option: <span style={{ color: "var(--fg)", fontWeight: 700 }}>
-                {selectedOptionIdx !== null && options[selectedOptionIdx] ? options[selectedOptionIdx].label : "None"}
-              </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+              {options.map((opt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedOptionIdx(idx)}
+                  className={`btn btn-block ${selectedOptionIdx === idx ? "btn-primary" : "btn-secondary"}`}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", textTransform: "uppercase" }}
+                >
+                  <span>{opt.label}</span>
+                  <span style={{ fontSize: "11px", color: selectedOptionIdx === idx ? "inherit" : "var(--muted)" }}>
+                    ODDS: {opt.odds}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            {/* Underline input box */}
-            <div className="underlined-input-wrap" style={{ position: "relative", marginBottom: "20px" }}>
+            <div style={{ position: "relative", marginBottom: "24px" }}>
               <input
-                className="underlined-input"
-                type="text"
-                inputMode="decimal"
+                type="number"
                 placeholder="0.00"
                 value={amount}
-                disabled={isTxPending || !isConnected}
                 onChange={(e) => setAmount(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "16px 64px 16px 16px",
+                  fontSize: "20px",
+                  fontFamily: "var(--font-mono)",
+                  border: "2px solid var(--border)",
+                  background: "var(--bg)",
+                  color: "var(--fg)",
+                  borderRadius: 0,
+                  outline: "none"
+                }}
               />
               <span style={{ position: "absolute", right: 0, bottom: "12px", fontFamily: "var(--font-mono)", fontSize: "16px", fontWeight: 700, color: "var(--muted)" }}>
                 USDC
@@ -317,6 +348,12 @@ export function StakePanel({
                 ? "⚡ INSTANT STAKE"
                 : "STAKE"}
             </button>
+
+            {showPopupWarning && (
+              <div style={{ marginTop: "12px", padding: "12px", border: "1.5px solid var(--accent)", background: "var(--surface)", fontSize: "11px", color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                💡 Transaction taking longer than expected? Check if a MetaMask or Porto confirmation popup is minimized or blocked by your browser.
+              </div>
+            )}
           </>
         )}
 
@@ -344,7 +381,7 @@ export function StakePanel({
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         question={question}
-        options={optionsLabels}
+        options={displayLabels}
       />
     </>
   );

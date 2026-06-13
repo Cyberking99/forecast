@@ -13,5 +13,8 @@
     "dev": "npm run dev -w frontend",
     "dev:oracle": "npm run start -w oracle",
     "build": "npm run build -w frontend"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-verify": "^3.0.17"
   }
 }

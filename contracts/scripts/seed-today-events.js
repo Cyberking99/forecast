@@ -1,0 +1,98 @@
+const { ethers } = require("hardhat");
+
+async function main() {
+  const [deployer, alice, bob, carol] = await ethers.getSigners();
+  console.log("Seeding today's 6:10 PM GMT+1 events...");
+
+  const network = await ethers.provider.getNetwork();
+  const chainId = Number(network.chainId);
+  console.log("Current network chain ID:", chainId);
+
+  let predictionPoolAddress, usdcAddress;
+  if (chainId === 31337) {
+    predictionPoolAddress = "0xD5ac451B0c50B9476107823Af206eD814a2e2580";
+    usdcAddress = "0x18E317A7D70d8fBf8e6E893616b52390EbBdb629";
+  } else if (chainId === 84532) {
+    predictionPoolAddress = "0x807203F9b5bab0cd65fB94Db89728075d9E5Fe84";
+    usdcAddress = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+  } else {
+    throw new Error("Unsupported network");
+  }
+
+  const pool = await ethers.getContractAt("PredictionPool", predictionPoolAddress);
+  const usdc = await ethers.getContractAt("MockUSDC", usdcAddress);
+
+  // Mint USDC to Alice, Bob, and Carol (only if on local node)
+  if (chainId === 31337) {
+    const mintAmount = 100_000n * 10n ** 6n; // 100k USDC
+    for (const user of [alice, bob, carol]) {
+      const tx = await usdc.mint(user.address, mintAmount);
+      await tx.wait();
+      console.log(`Minted 100k USDC to ${user.address}`);
+
+      // Approve the PredictionPool to spend USDC
+      const approveTx = await usdc.connect(user).approve(predictionPoolAddress, ethers.MaxUint256);
+      await approveTx.wait();
+      console.log(`Approved PredictionPool to spend USDC for ${user.address}`);
+    }
+  }
+
+  // Calculate dynamic timestamps for 6:10 PM GMT+1 (June 13, 2026)
+  const resolutionDate = new Date();
+  resolutionDate.setHours(19, 40, 0, 0); // 18:10 (6:10 PM) GMT+1 today
+  const resolutionTimestamp = Math.floor(resolutionDate.getTime() / 1000);
+
+  const stakeDate = new Date();
+  stakeDate.setHours(19, 35, 0, 0); // 18:08 (6:08 PM) GMT+1 today
+  const stakeTimestamp = Math.floor(stakeDate.getTime() / 1000);
+
+  console.log(`Stake Deadline: ${stakeDate.toLocaleString()} (${stakeTimestamp})`);
+  console.log(`Resolution Deadline: ${resolutionDate.toLocaleString()} (${resolutionTimestamp})`);
+
+  const events = [
+    {
+      title: "Will the price of Bitcoin (BTC) be above $64,200.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      options: ["Yes", "No"]
+    },
+    {
+      title: "Will the price of Ethereum (ETH) be below $1,670.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      options: ["Yes", "No"]
+    },
+    {
+      title: "Will the price of BNB (BNB) be above $608.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      options: ["Yes", "No"]
+    }
+  ];
+
+  for (const event of events) {
+    console.log(`Creating pool: "${event.title}"`);
+    const tx = await pool.createPool(
+      event.title,
+      event.options,
+      stakeTimestamp,
+      resolutionTimestamp,
+      10, // 10 seconds dispute window
+      100 // 1% fee (100 bps)
+    );
+    const receipt = await tx.wait();
+    const eventLog = receipt.logs.find(
+      (l) => l.fragment && l.fragment.name === "PoolCreated"
+    );
+    const poolId = eventLog.args[0];
+    console.log(`Pool created successfully with ID: ${poolId}`);
+
+    // If on local node, seed some random stakes for demonstration
+    if (chainId === 31337) {
+      console.log("Staking on options...");
+      await (await pool.connect(alice).stake(poolId, 0, 500n * 10n ** 6n)).wait();
+      await (await pool.connect(bob).stake(poolId, 1, 300n * 10n ** 6n)).wait();
+    }
+  }
+
+  console.log("Seeding completed successfully!");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

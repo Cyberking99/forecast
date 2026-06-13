@@ -190,8 +190,10 @@ export function StakePanel({
 
       const amountBigInt = BigInt(parsedAmount);
 
+      let txHash: string | undefined;
+
       if (isPorto) {
-        await sendCallsAsync({
+        const res = await sendCallsAsync({
           calls: [
             {
               to: usdcAddress,
@@ -207,6 +209,7 @@ export function StakePanel({
             }
           ]
         });
+        txHash = res.id;
       } else {
         const currentAllowance = (allowance as bigint) ?? BigInt(0);
         if (currentAllowance < amountBigInt) {
@@ -220,12 +223,36 @@ export function StakePanel({
           await refetchAllowance();
         }
 
-        await writeContractAsync({
+        txHash = await writeContractAsync({
           address: poolAddress,
           abi: PREDICTION_POOL_ABI,
           functionName: "stake",
           args: [poolId as `0x${string}`, selectedOptionIdx, amountBigInt],
         });
+      }
+
+      // Sync stake with the database backend api
+      if (txHash && address) {
+        try {
+          const syncRes = await fetch('/api/stakes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              poolId,
+              staker: address,
+              optionId: selectedOptionIdx,
+              amount: amountBigInt.toString(),
+              txHash,
+            }),
+          });
+          if (!syncRes.ok) {
+            console.error("Failed to sync stake to backend DB:", await syncRes.text());
+          } else {
+            console.log("Successfully synced stake to backend DB:", txHash);
+          }
+        } catch (syncErr) {
+          console.error("Error during backend stake syncing:", syncErr);
+        }
       }
 
       setAmount("");

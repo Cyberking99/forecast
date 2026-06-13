@@ -7,7 +7,14 @@ import { fileURLToPath } from 'url';
 import httpModule from 'http';
 import { gatherEvidence, buildResolutionPrompt, callVeniceOracle } from './resolvePool.js';
 import type { Pool } from './resolvePool.js';
-import { PREDICTION_POOL_ABI } from '../../frontend/src/shared/lib/contracts.js';
+import { parseAbi } from 'viem';
+
+export const PREDICTION_POOL_ABI = parseAbi([
+  'event PoolCreated(bytes32 indexed poolId, string question, string[] options, uint256 stakeDeadline)',
+  'function pools(bytes32 poolId) external view returns (bytes32 id, string question, uint256 stakeDeadline, uint256 resolutionDeadline, uint256 disputeWindow, uint256 resolvedAt, uint8 winningOption, uint8 status, uint256 totalPool, uint256 protocolFeeBps, address creator, bytes32 verdictHash, uint8 verdictCount)',
+  'function getPoolOptions(bytes32 poolId) external view returns (string[])',
+  'function submitVerdict(bytes32 poolId, uint8 winningOption, bytes32 verdictHash, bytes signature) external'
+]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,7 +85,7 @@ async function fetchLockedPools(): Promise<Pool[]> {
         abi: PREDICTION_POOL_ABI,
         functionName: 'pools',
         args: [poolId],
-      }) as any[];
+      }) as unknown as any[];
 
       // PoolStatus enum is: 0: OPEN, 1: LOCKED, 2: RESOLVED, 3: SETTLED
       const status = poolData[7] as number;

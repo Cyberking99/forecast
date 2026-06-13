@@ -91,16 +91,60 @@ export async function callVeniceOracle(prompt: string): Promise<VerdictJSON> {
 }
 
 export async function gatherEvidence(question: string, options: string[]): Promise<Evidence[]> {
-  // Mock evidence gathering - In production, this would call News APIs, Sports Data APIs, etc.
   console.log(`Gathering evidence for: ${question}`);
+  
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    console.warn("⚠️ TAVILY_API_KEY is not set. Falling back to mock evidence.");
+    return [
+      {
+        source: "UEFA Champions League 2025/26 — Match Statistics",
+        content: "Real Madrid enters the 2026 final with 9 wins, 1 draw, and a +18 goal differential across the knockout stage. Their transition press has generated 12 goals from turnovers."
+      },
+      {
+        source: "Head-to-Head Historical Data (2000–2026)",
+        content: "Real Madrid has an undefeated record against the opponent in the last 3 meetings."
+      }
+    ];
+  }
+
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: question,
+        search_depth: "advanced",
+        max_results: 5,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Tavily API responded with status ${res.status}`);
+    }
+
+    const data = (await res.json()) as { results?: Array<{ title: string; content: string; url?: string }> };
+    
+    if (data.results && data.results.length > 0) {
+      return data.results.map((r) => ({
+        source: `${r.title} (${r.url || "Tavily Search"})`,
+        content: r.content,
+      }));
+    } else {
+      console.warn("Tavily returned no search results.");
+    }
+  } catch (err) {
+    console.error("Failed to gather evidence via Tavily:", err);
+  }
+
+  // Fallback if Tavily fails or returns empty results
   return [
     {
-      source: "UEFA Champions League 2025/26 — Match Statistics",
-      content: "Real Madrid enters the 2026 final with 9 wins, 1 draw, and a +18 goal differential across the knockout stage. Their transition press has generated 12 goals from turnovers."
-    },
-    {
-      source: "Head-to-Head Historical Data (2000–2026)",
-      content: "Real Madrid has an undefeated record against the opponent in the last 3 meetings."
+      source: "Search Fallback",
+      content: `No active internet results found for the question: "${question}".`
     }
   ];
 }

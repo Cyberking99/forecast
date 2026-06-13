@@ -4,6 +4,7 @@ import { baseSepolia } from 'viem/chains';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import httpModule from 'http';
 import { gatherEvidence, buildResolutionPrompt, callVeniceOracle } from './resolvePool.js';
 import type { Pool } from './resolvePool.js';
 import { PREDICTION_POOL_ABI } from '../../frontend/src/shared/lib/contracts.js';
@@ -39,6 +40,16 @@ const walletClient = createWalletClient({
   chain: baseSepolia,
   transport: http(RPC_URL),
   account: oracleAccount,
+});
+
+// Render free tier compatibility (HTTP Health Check Web Server)
+const PORT = process.env.PORT || 8080;
+const server = httpModule.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Oracle Worker health check OK\n');
+});
+server.listen(PORT, () => {
+  console.log(`Health check server listening on port ${PORT}`);
 });
 
 async function fetchLockedPools(): Promise<Pool[]> {

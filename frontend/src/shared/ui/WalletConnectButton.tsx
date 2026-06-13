@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, type Connector } from 'wagmi';
 
 export function WalletConnectButton() {
   const { address, isConnected, isConnecting, connector } = useAccount();
@@ -13,7 +13,7 @@ export function WalletConnectButton() {
   const injectedConnector = connectors.find((c) => c.type === 'injected');
   const portoConnector = connectors.find((c) => c.id === 'xyz.ithaca.porto');
 
-  const handleConnect = (conn: any) => {
+  const handleConnect = (conn: Connector) => {
     connect({ connector: conn });
     setIsModalOpen(false);
   };

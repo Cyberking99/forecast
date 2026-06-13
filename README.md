@@ -1,5 +1,9 @@
 # Forecast 🔮
 
+<p align="center">
+  <img src="logo.png" alt="Forecast Logo" width="300" />
+</p>
+
 Forecast is a decentralized, multi-sided parimutuel prediction pool platform. Users stake USDC on different outcome options for real-world questions, and the winning side shares the losing pool proportionally to their stake. 
 
 The project leverages cutting-edge Web3 and AI tools, including the **MetaMask Smart Accounts Kit** (EIP-7702 & ERC-7715), **1Shot API**, **Venice AI**, and the **x402 Protocol**.

@@ -30,7 +30,7 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
 
   const optionsArray = (optionsData || []) as string[];
 
-  // 3. Fetch Option Totals (Multicall)
+  // 3. Fetch Option Totals
   const { data: totalsData, refetch: refetchTotals } = useReadContracts({
     contracts: optionsArray.map((_, idx) => ({
       address: getPredictionPoolAddress() as `0x${string}`,
@@ -49,29 +49,26 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
 
   if (isPoolLoading || isOptionsLoading) {
     return (
-      <main className="app-main" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-        <div style={{ color: 'var(--muted)' }}>Loading prediction pool details...</div>
+      <main className="app-main" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px", fontFamily: "var(--font-mono)" }}>
+        <div style={{ color: "var(--muted)" }}>LOADING POOL DETAILS...</div>
       </main>
     );
   }
 
-  // If pool does not exist, poolData[0] (id) will be zero bytes
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hasPool = poolData && (poolData as any)[0] !== "0x0000000000000000000000000000000000000000000000000000000000000000";
+  const poolDetails = poolData as readonly unknown[];
+  const hasPool = poolDetails && (poolDetails[0] as string) !== "0x0000000000000000000000000000000000000000000000000000000000000000";
   if (!hasPool) {
     return (
       <main className="app-main">
-        <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <h3 style={{ color: 'var(--text)', marginBottom: '8px' }}>Prediction Pool Not Found</h3>
-          <p style={{ color: 'var(--muted)', marginBottom: '16px' }}>The pool you are trying to access does not exist on-chain.</p>
+        <div style={{ textAlign: "center", padding: "64px 32px", border: "2px solid var(--border)", background: "var(--surface)" }}>
+          <h3 style={{ fontSize: "20px", marginBottom: "8px" }}>PREDICTION POOL NOT FOUND</h3>
+          <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "20px" }}>The pool you are trying to access does not exist on-chain.</p>
           <Link href="/" className="btn btn-primary">Back to Feed</Link>
         </div>
       </main>
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const poolDetails = poolData as any;
   const totalPoolRaw = poolDetails[8] as bigint;
   const totalPool = Number(totalPoolRaw) / 10 ** 6;
 
@@ -96,19 +93,19 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
   const statusUint = poolDetails[7] as number;
   const status = (statusMap[statusUint] || "open") as PoolStatus;
 
-  // Calculate time remaining
-  const stakeDeadline = Number(poolDetails[2]);
+  // Calculate time remaining (single large number + unit, e.g. "14h" or "2d" or "Closed")
+  const stakeDeadline = Number(poolDetails[2] as bigint);
   const now = Math.floor(Date.now() / 1000);
   const diffSecs = stakeDeadline - now;
-  let timeLeft = "Closed";
+  let timeLeft = "CLOSED";
   if (diffSecs > 0) {
     const days = Math.floor(diffSecs / (24 * 3600));
     const hours = Math.floor((diffSecs % (24 * 3600)) / 3600);
     const mins = Math.floor((diffSecs % 3600) / 60);
     if (days > 0) {
-      timeLeft = `${days}d ${hours}h ${mins}m`;
+      timeLeft = `${days}d`;
     } else if (hours > 0) {
-      timeLeft = `${hours}h ${mins}m`;
+      timeLeft = `${hours}h`;
     } else {
       timeLeft = `${mins}m`;
     }
@@ -116,70 +113,117 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
 
   return (
     <main className="app-main">
-      <div className="pool-detail-layout" style={{ display: 'flex', gap: '24px' }}>
-        {/* Left / Main column */}
-        <div className="pool-detail-main" style={{ flex: 1 }}>
-          {/* Breadcrumb */}
-          <div style={{ marginBottom: "12px" }}>
-            <Link href="/" style={{ fontSize: "13px", color: "var(--muted)" }}>
-              ← Back to Feed
-            </Link>
+      {/* Breadcrumb */}
+      <div style={{ marginBottom: "24px" }}>
+        <Link href="/" style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--muted)", fontFamily: "var(--font-mono)", textDecoration: "none" }}>
+          ← BACK TO FEED
+        </Link>
+      </div>
+
+      {/* Hero Header: question fills top ~30% of viewport, inline status, large countdown */}
+      <div className="pool-detail-hero" style={{ borderBottom: "2px solid var(--border)", paddingBottom: "32px", marginBottom: "40px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "32px" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <span style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+                MARKET RESOLUTION
+              </span>
+              <StatusBadge status={status} />
+            </div>
+            <h1 className="pool-detail-question" style={{ margin: 0 }}>
+              {poolDetails[1] as string}
+            </h1>
           </div>
 
-          {/* Hero image */}
-          <div className="pool-hero">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://picsum.photos/seed/${poolId.slice(0, 10)}/1200/400`}
-              alt=""
-              loading="lazy"
-            />
-          </div>
-
-          {/* Pool Header */}
-          <h1 className="pool-header-question" style={{ fontSize: "clamp(22px, 2.4vw, 32px)", fontWeight: 700, margin: "4px 0 12px" }}>
-            {poolDetails[1]}
-          </h1>
-
-          <div className="pool-header-meta" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-            <StatusBadge status={status} />
-            <span className="countdown" style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--amber-soft)", color: "var(--amber)", fontSize: "13px", fontWeight: 600 }}>⏱ {timeLeft}</span>
-            <span className="pool-total-label" style={{ fontSize: "13px", color: "var(--muted)" }}>
-              Total pool: <strong className="pool-total-value t-num" style={{ fontSize: "24px", color: "var(--fg)" }}>
-                ${totalPool.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-              </strong>
-            </span>
-          </div>
-
-          {/* Full stake bar */}
-          <LiveStakeBar options={mappedOptions} />
-
-          {/* Option Cards */}
-          <div className="option-cards">
-            {mappedOptions.map((opt, idx) => {
-              const isSelected = selectedOptionIdx === idx;
-              return (
-                <div
-                  key={idx}
-                  className={`option-card ${isSelected ? "selected" : ""}`}
-                  style={{ cursor: status === "open" ? "pointer" : "default" }}
-                  onClick={() => status === "open" && setSelectedOptionIdx(idx)}
-                >
-                  <div className="option-card-check">{isSelected ? "✓" : ""}</div>
-                  <div className="option-card-name">{opt.label}</div>
-                  <div className="option-card-stats">
-                    <span className="option-card-pct">{opt.percentage}%</span>
-                    <span className="option-card-odds">{opt.odds}</span>
-                    <span className="option-card-odds">{opt.totalStakedStr} staked</span>
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)", marginBottom: "4px" }}>
+              TIME REMAINING
+            </div>
+            <div className="pool-detail-countdown">
+              {timeLeft}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Right sidebar */}
-        <div style={{ width: "320px", flexShrink: 0 }}>
+      {/* Main Grid: Details left, Staking panel right */}
+      <div className="pool-detail-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+          
+          {/* Redeemed Stake Bar */}
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, marginBottom: "8px" }}>
+              Live Staking Distribution
+            </div>
+            <LiveStakeBar options={mappedOptions} status={status} />
+          </div>
+
+          {/* Option Selector List */}
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: 700, marginBottom: "16px" }}>
+              OUTCOME SELECTION
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {mappedOptions.map((opt, idx) => {
+                const isSelected = selectedOptionIdx === idx;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => status === "open" && setSelectedOptionIdx(idx)}
+                    style={{
+                      border: isSelected ? "2px solid var(--accent)" : "2px solid var(--border)",
+                      background: isSelected ? "var(--accent-soft)" : "var(--surface)",
+                      padding: "16px 20px",
+                      cursor: status === "open" ? "pointer" : "default",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{
+                        width: "16px",
+                        height: "16px",
+                        border: "2px solid var(--border)",
+                        background: isSelected ? "var(--accent)" : "transparent",
+                        display: "grid",
+                        placeItems: "center"
+                      }}>
+                        {isSelected && <span style={{ color: "#FFF", fontSize: "10px" }}>✓</span>}
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: "14px" }}>{opt.label}</span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "24px", fontSize: "13px" }}>
+                      <span>{opt.percentage}% SHARE</span>
+                      <span style={{ color: "var(--accent)", fontWeight: 700 }}>{opt.odds}</span>
+                      <span style={{ color: "var(--muted)" }}>{opt.totalStakedStr} STAKED</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Meta specs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", border: "2px solid var(--border)", padding: "24px", background: "var(--surface)" }}>
+            <div>
+              <div style={{ fontSize: "10px", color: "var(--muted)" }}>POOL ADDRESS</div>
+              <div style={{ fontSize: "12px", fontFamily: "var(--font-mono)", wordBreak: "break-all", marginTop: "4px" }}>{poolId}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "10px", color: "var(--muted)" }}>TOTAL TELEMETRY POOL</div>
+              <div style={{ fontSize: "20px", fontWeight: 800, marginTop: "4px", color: "var(--accent)" }}>
+                ${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right column: Staking Panel */}
+        <div>
           <StakePanel
             poolId={poolId}
             options={mappedOptions}
@@ -187,7 +231,7 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
             setSelectedOptionIdx={setSelectedOptionIdx}
             totalPool={totalPool}
             refetch={refetchAll}
-            question={poolDetails[1]}
+            question={poolDetails[1] as string}
             optionsLabels={optionsArray}
           />
         </div>

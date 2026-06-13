@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import { WalletConnectButton } from "@/shared/ui/WalletConnectButton";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 
 import { Providers } from "./providers";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
                   Forecast
                 </Link>
                 <div className="header-actions">
+                  <ThemeToggle />
                   <WalletConnectButton />
                   <Link href="/portfolio" className="btn btn-secondary" style={{ marginRight: "8px" }}>My Portfolio</Link>
                   <Link href="/create" className="btn btn-primary">Create Prediction</Link>

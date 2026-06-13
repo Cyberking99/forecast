@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PoolCard } from "@/features/pools/components/PoolCard";
 import { fetchOnChainPools } from "@/shared/lib/contracts";
 
@@ -35,14 +36,27 @@ export default async function Home() {
       <main className="app-main" style={{ display: "flex", flexDirection: "column", gap: "64px" }}>
         
         {allPools.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "64px 32px", border: "2px solid var(--border)", background: "var(--surface)" }}>
-            <h3 style={{ fontSize: "20px", marginBottom: "12px" }}>NO PREDICTION POOLS FOUND</h3>
-            <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "20px" }}>
-              Please run the seed script to deploy prediction pools on your local network.
+          <div style={{ 
+            textAlign: "center", 
+            padding: "80px 32px", 
+            border: "1px dashed var(--border)", 
+            background: "var(--surface)",
+            borderRadius: "12px",
+            maxWidth: "600px",
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px"
+          }}>
+            <div style={{ fontSize: "32px" }}>🔍</div>
+            <h3 style={{ fontSize: "20px", fontWeight: 600, letterSpacing: "-0.02em" }}>No Active Markets</h3>
+            <p style={{ color: "var(--muted)", fontSize: "14px", lineHeight: "1.6", maxWidth: "420px", margin: "0 auto 8px" }}>
+              Be the first to forecast the future. Launch a custom prediction pool on Base Sepolia.
             </p>
-            <code style={{ display: "block", background: "var(--bg)", padding: "12px", border: "1px solid var(--border)", fontSize: "11px", color: "var(--accent)" }}>
-              npx -w contracts hardhat run scripts/seed.js --network localhost
-            </code>
+            <Link href="/create" className="btn btn-primary" style={{ textDecoration: "none", display: "inline-block", width: "auto", padding: "12px 24px" }}>
+              Create Prediction Market
+            </Link>
           </div>
         ) : (
           <div className="asymmetric-feed">

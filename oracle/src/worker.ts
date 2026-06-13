@@ -63,15 +63,32 @@ async function fetchLockedPools(): Promise<Pool[]> {
   console.log("Checking for locked pools ready for resolution on-chain...");
   try {
     const latestBlock = await publicClient.getBlockNumber();
-    const fromBlock = latestBlock > 1900n ? latestBlock - 1900n : 0n;
+    
+    // Deployed block for PredictionPool on Base Sepolia
+    const deployedBlock = 42759313n;
+    const startBlock = latestBlock > deployedBlock ? deployedBlock : 0n;
 
-    const logs = await publicClient.getContractEvents({
-      address: PREDICTION_POOL_ADDRESS,
-      abi: PREDICTION_POOL_ABI,
-      eventName: 'PoolCreated',
-      fromBlock,
-    });
+    const batchSize = 2000n;
+    const promises = [];
 
+    for (let from = startBlock; from <= latestBlock; from += batchSize) {
+      const to = from + batchSize - 1n > latestBlock ? latestBlock : from + batchSize - 1n;
+      promises.push(
+        publicClient.getContractEvents({
+          address: PREDICTION_POOL_ADDRESS,
+          abi: PREDICTION_POOL_ABI,
+          eventName: 'PoolCreated',
+          fromBlock: from,
+          toBlock: to,
+        }).catch(err => {
+          console.warn(`Failed to fetch events from ${from} to ${to}:`, err);
+          return [];
+        })
+      );
+    }
+
+    const results = await Promise.all(promises);
+    const logs = results.flat();
     const poolIds = logs.map(log => log.args.poolId).filter(Boolean) as `0x${string}`[];
     console.log(`Found ${poolIds.length} pools on-chain in the query window. Checking statuses...`);
 

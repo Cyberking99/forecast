@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
 import crypto from 'crypto';
+import { publicClient, PREDICTION_POOL_ABI, getPredictionPoolAddress } from '@/shared/lib/contracts';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,12 +29,72 @@ export async function POST(req: NextRequest) {
     if (event.type === 'TRANSACTION_MINED') {
       const { txHash, customData } = event.payload;
 
+      // Ensure the pool exists in the database
+      if (customData?.poolId) {
+        const dbPool = await prisma.pool.findUnique({
+          where: { id: customData.poolId }
+        });
+
+        if (!dbPool) {
+          try {
+            console.log(`Syncing pool ${customData.poolId} to DB...`);
+            const poolData = await publicClient.readContract({
+              address: getPredictionPoolAddress() as `0x${string}`,
+              abi: PREDICTION_POOL_ABI,
+              functionName: 'pools',
+              args: [customData.poolId],
+            }) as unknown as any[];
+
+            const optionsArray = await publicClient.readContract({
+              address: getPredictionPoolAddress() as `0x${string}`,
+              abi: PREDICTION_POOL_ABI,
+              functionName: 'getPoolOptions',
+              args: [customData.poolId],
+            }) as string[];
+
+            await prisma.pool.create({
+              data: {
+                id: customData.poolId,
+                question: poolData[1] as string,
+                options: optionsArray,
+                stakeDeadline: new Date(Number(poolData[2]) * 1000),
+                resolutionDeadline: new Date(Number(poolData[3]) * 1000),
+                disputeWindowSecs: Number(poolData[4]),
+                feeBps: Number(poolData[9]),
+                creatorAddress: poolData[10] as string,
+                totalPool: poolData[8] as bigint,
+              }
+            });
+            console.log(`Successfully synced pool ${customData.poolId} to database.`);
+          } catch (err) {
+            console.error(`Error syncing pool ${customData.poolId} to database:`, err);
+          }
+        }
+      }
+
       // Handle custom data payloads (e.g. from the StakePanel or Oracle)
       if (customData?.type === 'STAKE') {
-        await prisma.stake.updateMany({
-          where: { txHash: 'PENDING', staker: customData.staker, poolId: customData.poolId },
-          data: { txHash }
+        // Double check if stake record exists, create if missing, then update
+        const pendingStake = await prisma.stake.findFirst({
+          where: { txHash: 'PENDING', staker: customData.staker, poolId: customData.poolId }
         });
+
+        if (pendingStake) {
+          await prisma.stake.update({
+            where: { id: pendingStake.id },
+            data: { txHash }
+          });
+        } else {
+          await prisma.stake.create({
+            data: {
+              poolId: customData.poolId,
+              staker: customData.staker,
+              optionId: customData.optionId,
+              amount: BigInt(customData.amount),
+              txHash
+            }
+          });
+        }
         
         // Add to total pool
         await prisma.pool.update({

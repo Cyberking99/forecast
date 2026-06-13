@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
+import { publicClient, PREDICTION_POOL_ABI, getPredictionPoolAddress } from '@/shared/lib/contracts';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,47 @@ export async function POST(req: NextRequest) {
 
     const parsedVerdict = JSON.parse(verdictJson);
     const newStatus = parsedVerdict.status === 'UNRESOLVABLE' ? 'UNRESOLVABLE' : 'RESOLVED';
+
+    // Ensure the pool exists in the database first
+    const dbPool = await prisma.pool.findUnique({
+      where: { id: poolId }
+    });
+
+    if (!dbPool) {
+      try {
+        console.log(`Syncing pool ${poolId} to DB...`);
+        const poolData = await publicClient.readContract({
+          address: getPredictionPoolAddress() as `0x${string}`,
+          abi: PREDICTION_POOL_ABI,
+          functionName: 'pools',
+          args: [poolId],
+        }) as unknown as any[];
+
+        const optionsArray = await publicClient.readContract({
+          address: getPredictionPoolAddress() as `0x${string}`,
+          abi: PREDICTION_POOL_ABI,
+          functionName: 'getPoolOptions',
+          args: [poolId],
+        }) as string[];
+
+        await prisma.pool.create({
+          data: {
+            id: poolId,
+            question: poolData[1] as string,
+            options: optionsArray,
+            stakeDeadline: new Date(Number(poolData[2]) * 1000),
+            resolutionDeadline: new Date(Number(poolData[3]) * 1000),
+            disputeWindowSecs: Number(poolData[4]),
+            feeBps: Number(poolData[9]),
+            creatorAddress: poolData[10] as string,
+            totalPool: poolData[8] as bigint,
+          }
+        });
+        console.log(`Successfully synced pool ${poolId} to database.`);
+      } catch (err) {
+        console.error(`Error syncing pool ${poolId} to database:`, err);
+      }
+    }
 
     // Update the pool with the AI's transparent reasoning and status
     await prisma.pool.update({

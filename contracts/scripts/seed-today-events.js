@@ -39,11 +39,11 @@ async function main() {
 
   // Calculate dynamic timestamps for 6:10 PM GMT+1 (June 13, 2026)
   const resolutionDate = new Date();
-  resolutionDate.setHours(19, 40, 0, 0); // 18:10 (6:10 PM) GMT+1 today
+  resolutionDate.setHours(12, 10, 0, 0); // 18:10 (6:10 PM) GMT+1 today
   const resolutionTimestamp = Math.floor(resolutionDate.getTime() / 1000);
 
   const stakeDate = new Date();
-  stakeDate.setHours(19, 35, 0, 0); // 18:08 (6:08 PM) GMT+1 today
+  stakeDate.setHours(12, 5, 0, 0); // 18:08 (6:08 PM) GMT+1 today
   const stakeTimestamp = Math.floor(stakeDate.getTime() / 1000);
 
   console.log(`Stake Deadline: ${stakeDate.toLocaleString()} (${stakeTimestamp})`);
@@ -51,15 +51,15 @@ async function main() {
 
   const events = [
     {
-      title: "Will the price of Bitcoin (BTC) be above $64,200.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      title: "Will the price of Bitcoin (BTC) be above $64,200.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
       options: ["Yes", "No"]
     },
     {
-      title: "Will the price of Ethereum (ETH) be below $1,670.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      title: "Will the price of Ethereum (ETH) be below $1,670.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
       options: ["Yes", "No"]
     },
     {
-      title: "Will the price of BNB (BNB) be above $608.00 USD at 7:30 PM GMT+1 on June 13, 2026, according to CoinGecko or Binance?",
+      title: "Will the price of BNB (BNB) be above $608.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
       options: ["Yes", "No"]
     }
   ];

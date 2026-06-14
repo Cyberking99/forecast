@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useReadContract, useReadContracts } from "wagmi";
+import { useReadContract, useReadContracts, useWriteContract } from "wagmi";
 import { getPredictionPoolAddress, PREDICTION_POOL_ABI } from "@/shared/lib/contracts";
 import { StatusBadge, PoolStatus } from "@/shared/ui/StatusBadge";
 import { LiveStakeBar } from "@/features/pools/components/LiveStakeBar";
@@ -11,6 +11,50 @@ import Link from "next/link";
 export default function PoolDetail({ params }: { params: { id: string } }) {
   const poolId = params.id as `0x${string}`;
   const [selectedOptionIdx, setSelectedOptionIdx] = useState<number | null>(null);
+  
+  const { writeContractAsync } = useWriteContract();
+  const [isSettling, setIsSettling] = useState(false);
+  const [settleError, setSettleError] = useState<string | null>(null);
+
+  const handleSettle = async () => {
+    setIsSettling(true);
+    setSettleError(null);
+    try {
+      const txHash = await writeContractAsync({
+        address: getPredictionPoolAddress() as `0x${string}`,
+        abi: PREDICTION_POOL_ABI,
+        functionName: "settle",
+        args: [poolId],
+      });
+      console.log("Settle transaction sent:", txHash);
+      
+      // Sync status to database
+      const syncRes = await fetch("/api/pools/settle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ poolId, txHash }),
+      });
+      
+      if (!syncRes.ok) {
+        const errorData = await syncRes.json();
+        throw new Error(errorData.error || "Failed to sync settlement state to database");
+      }
+      
+      console.log("Settlement successfully synchronized to database.");
+      refetchAll();
+    } catch (err: unknown) {
+      console.error("Failed to settle pool:", err);
+      // Clean up readable messages if we can
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("PredictionPool: dispute window")) {
+        setSettleError("Dispute window is still open on-chain. Please wait for the window to expire.");
+      } else {
+        setSettleError(msg);
+      }
+    } finally {
+      setIsSettling(false);
+    }
+  };
 
   // 1. Fetch Pool Details
   const { data: poolData, isLoading: isPoolLoading, refetch: refetchPool } = useReadContract({
@@ -156,6 +200,45 @@ export default function PoolDetail({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
+
+      {/* Settlement Banner */}
+      {status === "resolving" && (
+        <div style={{
+          background: "var(--surface)",
+          border: "2px solid var(--border)",
+          padding: "24px",
+          marginBottom: "40px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px"
+        }}>
+          <div style={{ flex: 1, minWidth: "280px" }}>
+            <h4 style={{ margin: 0, fontWeight: 700, fontSize: "14px", textTransform: "uppercase", fontFamily: "var(--font-mono)", color: "var(--accent)" }}>
+              ★ Market Resolved (Dispute Window Open)
+            </h4>
+            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--muted)", lineHeight: "1.5" }}>
+              The oracle has declared a verdict. Once the dispute window has passed (or if you wish to trigger settlement directly), click Settle Pool to execute the on-chain payout calculations and distribute USDC winnings.
+            </p>
+            {settleError && (
+              <p style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>
+                ⚠️ Error: {settleError}
+              </p>
+            )}
+          </div>
+          <div>
+            <button
+              onClick={handleSettle}
+              disabled={isSettling}
+              className="btn btn-primary"
+              style={{ padding: "12px 24px", minWidth: "150px" }}
+            >
+              {isSettling ? "Settling Pool..." : "Settle Pool"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid: Details left, Staking panel right */}
       <div className="pool-detail-grid">

@@ -49,23 +49,75 @@ async function main() {
   console.log(`Stake Deadline: ${stakeDate.toLocaleString()} (${stakeTimestamp})`);
   console.log(`Resolution Deadline: ${resolutionDate.toLocaleString()} (${resolutionTimestamp})`);
 
-  const events = [
+  // const events = [
+  //   {
+  //     title: "Will the price of Bitcoin (BTC) be above $64,200.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
+  //     options: ["Yes", "No"]
+  //   },
+  //   {
+  //     title: "Will the price of Ethereum (ETH) be below $1,670.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
+  //     options: ["Yes", "No"]
+  //   },
+  //   {
+  //     title: "Will the price of BNB (BNB) be above $608.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
+  //     options: ["Yes", "No"]
+  //   }
+  // ];
+
+  const events2 = [
     {
-      title: "Will the price of Bitcoin (BTC) be above $64,200.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
-      options: ["Yes", "No"]
+      title: "Who will win the match between Brazil and Morocco in the 2026 world cup?",
+      options: ["Brazil wins", "Morocco wins"],
+      stakeTime: "2026-06-14T12:45:00+01:00",
+      resolveTime: "2026-06-14T12:48:00+01:00"
     },
     {
-      title: "Will the price of Ethereum (ETH) be below $1,670.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
-      options: ["Yes", "No"]
+      title: "Who will win the match between Ivory Coast and Ecuador in the 2026 world cup on 15/06/2026?",
+      options: ["Ivory Coast wins", "Ecuador wins"],
+      stakeTime: "2026-06-15T00:00:00+01:00",
+      resolveTime: "2026-06-15T02:30:00+01:00"
     },
     {
-      title: "Will the price of BNB (BNB) be above $608.00 USD at 12:07 PM GMT+1 on June 14, 2026, according to CoinGecko or Binance?",
-      options: ["Yes", "No"]
+      title: "Will Germany win Curacao in the 2026 world cup on 14/06/2026?",
+      options: ["Yes", "No"],
+      stakeTime: "2026-06-14T18:00:00+01:00",
+      resolveTime: "2026-06-14T22:00:00+01:00"
     }
   ];
 
-  for (const event of events) {
+  // for (const event of events) {
+  //   console.log(`Creating pool: "${event.title}"`);
+  //   const tx = await pool.createPool(
+  //     event.title,
+  //     event.options,
+  //     stakeTimestamp,
+  //     resolutionTimestamp,
+  //     10, // 10 seconds dispute window
+  //     100 // 1% fee (100 bps)
+  //   );
+  //   const receipt = await tx.wait();
+  //   const eventLog = receipt.logs.find(
+  //     (l) => l.fragment && l.fragment.name === "PoolCreated"
+  //   );
+  //   const poolId = eventLog.args[0];
+  //   console.log(`Pool created successfully with ID: ${poolId}`);
+
+  //   // If on local node, seed some random stakes for demonstration
+  //   if (chainId === 31337) {
+  //     console.log("Staking on options...");
+  //     await (await pool.connect(alice).stake(poolId, 0, 500n * 10n ** 6n)).wait();
+  //     await (await pool.connect(bob).stake(poolId, 1, 300n * 10n ** 6n)).wait();
+  //   }
+  // }
+
+  for (const event of events2) {
     console.log(`Creating pool: "${event.title}"`);
+
+    const stakeDate = new Date(event.stakeTime);
+    const stakeTimestamp = Math.floor(stakeDate.getTime() / 1000);
+    const resolutionDate = new Date(event.resolveTime);
+    const resolutionTimestamp = Math.floor(resolutionDate.getTime() / 1000);
+
     const tx = await pool.createPool(
       event.title,
       event.options,

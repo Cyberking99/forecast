@@ -16,7 +16,7 @@ export function StatusBadge({ status }: { status: PoolStatus }) {
       case "resolving":
         return (
           <>
-            <span className="status-spin"></span>Resolving
+            <span className="status-spin"></span>Resolved
           </>
         );
       case "settled":

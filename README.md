@@ -178,6 +178,67 @@ npm run build
 
 ---
 
+## 🛠️ Hackathon Track Requirements & Code Links
+
+As required by the MetaMask DevRel and HackQuest guidelines, here are the code usage links for each integration category:
+
+### 1. Smart Accounts Kit (Porto) & ERC-7715
+
+- **Session Keys / Advanced Permissions (ERC-7715)**:
+  - Requesting & Granting Session Permissions: [`StakePanel.tsx#L127-L157`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/features/staking/components/StakePanel.tsx#L127-L157)
+  - Querying Existing Sessions: [`StakePanel.tsx#L48-L50`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/features/staking/components/StakePanel.tsx#L48-L50)
+- **Atomic Batches (EIP-5792)**:
+  - Bundling USDC Approvals and Stakes: [`StakePanel.tsx#L195-L215`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/features/staking/components/StakePanel.tsx#L195-L215)
+- **Delegations / Redelegations**:
+  - *Not used* (Not required for Forecast's parimutuel design).
+
+### 2. x402 Protocol Micropayments
+
+- **Server Gating**:
+  - Validating incoming headers and proxying request: [`route.ts#L5-L20`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/app/api/analysis/route.ts#L5-L20)
+- **Client Payment & Consumption**:
+  - Triggering payment & parsing L402 challenge: [`AIAnalysisModal.tsx#L60-L115`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/features/analysis/components/AIAnalysisModal.tsx#L60-L115)
+
+### 3. 1Shot API
+
+- **Atomic Pool Settlements**:
+  - Batch payouts inside the settlement contract logic: [`PredictionPool.sol#L230-L245`](https://github.com/Cyberking99/forecast/blob/main/contracts/src/PredictionPool.sol#L230-L245)
+- **1Shot Webhook Integration**:
+  - Syncing mined transaction payloads to off-chain DB: [`1shot/route.ts#L15-L123`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/app/api/webhooks/1shot/route.ts#L15-L123)
+
+### 4. Venice AI
+
+- **Oracle Worker Resolution Loop**:
+  - Resolving locked pools and submitting signed on-chain verdicts: [`worker.ts#L35-L95`](https://github.com/Cyberking99/forecast/blob/main/oracle/src/worker.ts#L35-L95)
+- **JSON Structured Prompting**:
+  - Formatting deterministic LLM completion prompts: [`resolvePool.ts#L8-L45`](https://github.com/Cyberking99/forecast/blob/main/oracle/src/resolvePool.ts#L8-L45)
+- **Sentiment & Forecast Analysis Generation**:
+  - Serving user-requested premium analytical reports: [`route.ts#L33-L93`](https://github.com/Cyberking99/forecast/blob/main/frontend/src/app/api/analysis/route.ts#L33-L93)
+
+---
+
+## 💬 Developer Feedback
+
+### MetaMask Smart Accounts Kit (Porto)
+- **Praise**: The EIP-7702 EOA-upgrade capability is extremely clean. Getting gasless atomic batches through standard Wagmi config saves substantial development time.
+- **Encountered Issues**:
+  - **Porto issue #1034**: During browser testing, we noted that granted permissions are not automatically attached to `sendCalls` transactions within Porto's current beta. Users are still prompted with transaction signatures despite granting a session key.
+  - **Iframe / Cross-Origin limitations**: Porto relies on WebAuthn and passkeys which are restricted in insecure origins (HTTP) or when embedded in iframes. For local setups, this requires enabling HTTPS or opening the dApp outside of framing containers to prevent credentials verification failures.
+
+### 1Shot API
+- **Praise**: The webhook listener design is great. It makes it incredibly straightforward to update PostgreSQL databases asynchronously once transactions are processed on-chain, keeping the UI instantly in sync.
+
+### Venice AI
+- **Praise**: Standard compliance with OpenAI endpoints makes integration seamless. Response generation was fast and structured outputs via standard JSON mode parsed without any failures during test runs.
+
+---
+
+## 🐦 Social Media
+
+- **X (formerly Twitter) Post**: [Link to Submission Post](https://x.com/your-handle/status/placeholder)
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

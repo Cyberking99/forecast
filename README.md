@@ -233,12 +233,6 @@ As required by the MetaMask DevRel and HackQuest guidelines, here are the code u
 
 ---
 
-## 🐦 Social Media
-
-- **X (formerly Twitter) Post**: [Link to Submission Post](https://x.com/your-handle/status/placeholder)
-
----
-
 ## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
